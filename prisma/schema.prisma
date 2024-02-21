@@ -1,0 +1,125 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+  id                       String  @id
+  userId                   String
+  type                     String
+  provider                 String
+  providerAccountId        String
+  refresh_token            String?
+  refresh_token_expires_in Int?
+  access_token             String?
+  expires_at               Int?
+  token_type               String?
+  scope                    String?
+  id_token                 String?
+  session_state            String?
+  oauth_token_secret       String?
+  oauth_token              String?
+  User                     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Container {
+  id          String   @id
+  title       String?
+  description String?
+  content     String?
+  slug        String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime
+  published   Boolean  @default(false)
+  settings    Json?
+  projectId   String?
+  userId      String?
+  status      String?  @default("building")
+  Project     Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  User        User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([slug, projectId])
+  @@index([projectId])
+  @@index([userId])
+}
+
+model Example {
+  id          Int     @id @default(autoincrement())
+  name        String?
+  description String?
+  domainCount Int?
+  url         String?
+}
+
+model Project {
+  id           String        @id
+  name         String?
+  description  String?
+  subdomain    String?       @unique
+  customDomain String?       @unique
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime
+  userId       String?
+  Container    Container[]
+  User         User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  UserProject  UserProject[]
+}
+
+model Session {
+  id           String   @id
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  User         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model User {
+  id            String        @id
+  name          String?
+  username      String?
+  gh_username   String?
+  email         String?       @unique
+  emailVerified DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime
+  image         String?
+  settings      Json?
+  admin         Boolean?      @default(false)
+  type          String?       @default("Reseller")
+  password      String?
+  Account       Account[]
+  Container     Container[]
+  Project       Project[]
+  Session       Session[]
+  UserProject   UserProject[]
+}
+
+model UserProject {
+  id        String   @id
+  role      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+  userId    String
+  projectId String
+  Project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  User      User     @relation(fields: [userId], references: [id])
+
+  @@unique([userId, projectId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
